@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audit Log</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { padding: 40px; }
+        td, th { vertical-align: middle; }
+        .details-cell { font-family: monospace; font-size: 0.8rem; white-space: pre-wrap; word-break: break-word; }
+        .session-cell { font-family: monospace; font-size: 0.8rem; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="m-0">📋 Audit Log</h2>
+        <span id="count" class="badge bg-secondary">0 events</span>
+    </div>
+    <p class="text-muted">Live feed of every event recorded across the site, newest first.</p>
+
+    <div class="table-responsive">
+        <table class="table table-striped table-bordered align-middle">
+            <thead class="table-dark">
+                <tr>
+                    <th>Time</th>
+                    <th>Event</th>
+                    <th>Name</th>
+                    <th>Page</th>
+                    <th>Session</th>
+                    <th>Details</th>
+                </tr>
+            </thead>
+            <tbody id="logBody">
+                <tr><td colspan="6" class="text-center text-muted">Loading…</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script type="module">
+    import { db } from "./firebase-init.js";
+    import {
+        collection,
+        query,
+        orderBy,
+        onSnapshot
+    } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+
+    const logBody = document.getElementById("logBody");
+    const countBadge = document.getElementById("count");
+
+    const q = query(collection(db, "auditLog"), orderBy("timestamp", "desc"));
+
+    onSnapshot(q, (snapshot) => {
+        countBadge.textContent = `${snapshot.size} event${snapshot.size === 1 ? "" : "s"}`;
+
+        if (snapshot.empty) {
+            logBody.innerHTML = `<tr><td colspan="6" class="text-center text-muted">No entries yet.</td></tr>`;
+            return;
+        }
+
+        logBody.innerHTML = "";
+
+        snapshot.forEach((doc) => {
+            const data = doc.data();
+            const time = data.timestamp ? data.timestamp.toDate().toLocaleString() : "pending…";
+            const details = data.details && Object.keys(data.details).length
+                ? JSON.stringify(data.details)
+                : "—";
+
+            const row = document.createElement("tr");
+            row.innerHTML = `
+                <td>${time}</td>
+                <td><span class="badge bg-secondary">${escapeHtml(data.eventType || "")}</span></td>
+                <td>${escapeHtml(data.name || "—")}</td>
+                <td>${escapeHtml(data.page || "—")}</td>
+                <td class="session-cell">${escapeHtml((data.sessionId || "").slice(0, 14))}…</td>
+                <td class="details-cell">${escapeHtml(details)}</td>
+            `;
+            logBody.appendChild(row);
+        });
+    }, (error) => {
+        logBody.innerHTML = `<tr><td colspan="6" class="text-danger text-center">Error loading log: ${escapeHtml(error.message)}</td></tr>`;
+    });
+
+    function escapeHtml(str) {
+        const div = document.createElement("div");
+        div.textContent = str;
+        return div.innerHTML;
+    }
+</script>
+
+</body>
+</html>
