@@ -100,7 +100,7 @@
             reaction.src = reactions[clickCount - 1];
             reaction.style.display = "block";
 
-            logEvent("friend_no_click", { clickNumber: clickCount });
+            logEvent("friend_no_click", { clickNumber: clickCount, reaction: reactions[clickCount - 1] });
 
             // Move the No button
             if (clickCount <= 10) {
