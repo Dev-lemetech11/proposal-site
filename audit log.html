@@ -10,6 +10,7 @@
         td, th { vertical-align: middle; }
         .details-cell { font-family: monospace; font-size: 0.8rem; white-space: pre-wrap; word-break: break-word; }
         .session-cell { font-family: monospace; font-size: 0.8rem; }
+        .reaction-thumb { max-width: 60px; max-height: 60px; border-radius: 6px; display: block; }
     </style>
 </head>
 <body>
@@ -30,11 +31,12 @@
                     <th>Name</th>
                     <th>Page</th>
                     <th>Session</th>
+                    <th>Image</th>
                     <th>Details</th>
                 </tr>
             </thead>
             <tbody id="logBody">
-                <tr><td colspan="6" class="text-center text-muted">Loading…</td></tr>
+                <tr><td colspan="7" class="text-center text-muted">Loading…</td></tr>
             </tbody>
         </table>
     </div>
@@ -58,7 +60,7 @@
         countBadge.textContent = `${snapshot.size} event${snapshot.size === 1 ? "" : "s"}`;
 
         if (snapshot.empty) {
-            logBody.innerHTML = `<tr><td colspan="6" class="text-center text-muted">No entries yet.</td></tr>`;
+            logBody.innerHTML = `<tr><td colspan="7" class="text-center text-muted">No entries yet.</td></tr>`;
             return;
         }
 
@@ -71,6 +73,11 @@
                 ? JSON.stringify(data.details)
                 : "—";
 
+            const reactionFile = data.details && data.details.reaction;
+            const imageCell = reactionFile
+                ? `<img src="${escapeHtml(reactionFile)}" alt="${escapeHtml(reactionFile)}" class="reaction-thumb">`
+                : "—";
+
             const row = document.createElement("tr");
             row.innerHTML = `
                 <td>${time}</td>
@@ -78,12 +85,13 @@
                 <td>${escapeHtml(data.name || "—")}</td>
                 <td>${escapeHtml(data.page || "—")}</td>
                 <td class="session-cell">${escapeHtml((data.sessionId || "").slice(0, 14))}…</td>
+                <td>${imageCell}</td>
                 <td class="details-cell">${escapeHtml(details)}</td>
             `;
             logBody.appendChild(row);
         });
     }, (error) => {
-        logBody.innerHTML = `<tr><td colspan="6" class="text-danger text-center">Error loading log: ${escapeHtml(error.message)}</td></tr>`;
+        logBody.innerHTML = `<tr><td colspan="7" class="text-danger text-center">Error loading log: ${escapeHtml(error.message)}</td></tr>`;
     });
 
     function escapeHtml(str) {
